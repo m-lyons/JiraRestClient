@@ -7,6 +7,7 @@ using System.Net;
 using System.Text;
 using RestSharp;
 using RestSharp.Deserializers;
+using System.Threading.Tasks;
 
 namespace TechTalk.JiraRestClient
 {
@@ -23,7 +24,12 @@ namespace TechTalk.JiraRestClient
             this.username = username;
             this.password = password;
             deserializer = new JsonDeserializer();
-            client = new RestClient { BaseUrl = baseUrl + (baseUrl.EndsWith("/") ? "" : "/") + "rest/api/2/" };
+            client = new RestClient { BaseUrl = new Uri(baseUrl + (baseUrl.EndsWith("/") ? "" : "/") + "rest/api/2/") };
+        }
+
+        internal JiraClient(RestClient restClient, string username, string password)
+        {
+            client = restClient;
         }
 
         private RestRequest CreateRequest(Method method, String path)
@@ -96,13 +102,21 @@ namespace TechTalk.JiraRestClient
             }
         }
 
-
+        #region LoadIssue
         public Issue<TIssueFields> LoadIssue(IssueRef issueRef)
         {
             if (String.IsNullOrEmpty(issueRef.id))
                 return LoadIssue(issueRef.key);
             else /* we have an id */
                 return LoadIssue(issueRef.id);
+        }
+
+        public async Task<Issue<TIssueFields>> LoadIssueAsync(IssueRef issueRef)
+        {
+            if (String.IsNullOrEmpty(issueRef.id))
+                return await LoadIssueAsync(issueRef.key);
+            else /* we have an id */
+                return await LoadIssueAsync(issueRef.id);
         }
 
         public Issue<TIssueFields> LoadIssue(String issueRef)
@@ -127,6 +141,30 @@ namespace TechTalk.JiraRestClient
                 throw new JiraClientException("Could not load issue", ex);
             }
         }
+
+        public async Task<Issue<TIssueFields>> LoadIssueAsync(string issueRef)
+        {
+            try
+            {
+                var path = String.Format("issue/{0}", issueRef);
+                var request = CreateRequest(Method.GET, path);
+
+                var response = await client.ExecuteTaskAsync(request);
+                AssertStatus(response, HttpStatusCode.OK);
+
+                var issue = deserializer.Deserialize<Issue<TIssueFields>>(response);
+                issue.fields.comments = GetComments(issue).ToList();
+                issue.fields.watchers = GetWatchers(issue).ToList();
+                Issue.ExpandLinks(issue);
+                return issue;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError("GetIssue(issueRef) error: {0}", ex);
+                throw new JiraClientException("Could not load issue", ex);
+            }
+        }
+        #endregion
 
         public Issue<TIssueFields> CreateIssue(String projectKey, String issueType, String summary)
         {

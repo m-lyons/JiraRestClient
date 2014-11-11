@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace TechTalk.JiraRestClient
 {
@@ -17,8 +18,24 @@ namespace TechTalk.JiraRestClient
 
         /// <summary>Returns the issue identified by the given ref</summary>
         Issue<TIssueFields> LoadIssue(String issueRef);
+
+        /// <summary>
+        /// Loads the issue identified by the given ref.
+        /// </summary>
+        /// <param name="issueRef">The id or ref of the issue to load.</param>
+        /// <returns>The issue.</returns>
+        Task<Issue<TIssueFields>> LoadIssueAsync(string issueRef);
+
         /// <summary>Returns the issue identified by the given ref</summary>
         Issue<TIssueFields> LoadIssue(IssueRef issueRef);
+
+        /// <summary>
+        /// Loads the issue identified by the given ref.
+        /// </summary>
+        /// <param name="issueRef">The ref of the issue to load.</param>
+        /// <returns>The issue.</returns>
+        Task<Issue<TIssueFields>> LoadIssueAsync(IssueRef issueRef);
+
         /// <summary>Creates an issue of the specified type for the given project</summary>
         Issue<TIssueFields> CreateIssue(String projectKey, String issueType, String summary);
         /// <summary>Creates an issue of the specified type for the given project</summary>
